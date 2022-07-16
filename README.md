@@ -25,6 +25,7 @@ Formatting of code by Prettier.
 
 ## How to Play
 
-Use arrow keys to change direction, eat food, avoid colliding with the snake itself or the borders.
+Use arrow keys to change direction, eat the baits, avoid colliding with the snake itself or the borders.
+You can go faster by holding down an arrow key.
 
 You can play it [here](https://cool-html5.net/snake/).

@@ -43,11 +43,11 @@ export const Panel = (props: Props) => {
 			</div>
 			<div className="flex flex-row w-36 ml-6 rounded-xl border-2 border-slate-300 cursor-default">
 				<div className="flex-initial px-5 py-2 border-r-2 rounded-l-lg bg-slate-200">Length</div>
-				<div className="flex-initial grow px-5 py-2 rounded-r-xl">{gameStats.length}</div>
+				<div className="flex-initial grow px-3 py-2 rounded-r-xl">{gameStats.length}</div>
 			</div>
 			<div className="flex flex-row w-36 ml-6 rounded-xl border-2 border-slate-300 cursor-default">
 				<div className="flex-initial px-5 py-2 border-r-2 rounded-l-lg bg-slate-200">Speed</div>
-				<div className="flex-initial grow px-5 py-2 rounded-r-xl">{gameStats.speed.toFixed(2)}</div>
+				<div className="flex-initial grow px-3 py-2 rounded-r-xl">{gameStats.speed.toFixed(2)}</div>
 			</div>
 		</div>
 	)

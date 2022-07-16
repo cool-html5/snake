@@ -2,10 +2,11 @@ import {useEffect, useRef, useState} from "react"
 import {useEventListener} from "./hooks/use-event-listener"
 import {Panel} from "./panel"
 import {SnakeCell} from "./snake-cell"
+import {ButtonStates, GameStats} from "./types"
 
 const cellWidth = 20
 const cellHeight = 20
-const initialIntervalInMs = 240
+const initialIntervalInMs = 250
 
 type Props = {
 	horizontalCells: number
@@ -16,9 +17,9 @@ export const Game = (props: Props) => {
 	const {horizontalCells, verticalCells} = props
 	const canvasWidth = cellWidth * horizontalCells
 	const canvasHeight = cellHeight * verticalCells
-	const [gameStats, setGameStats] = useState({score: 0, length: 1, speed: 1000 / initialIntervalInMs})
+	const [gameStats, setGameStats] = useState<GameStats>({score: 0, length: 1, speed: 1000 / initialIntervalInMs})
 	const gameStatsRef = useRef(gameStats)
-	const [buttonStates, setButtonStates] = useState({start: true, pause: false, newGame: false})
+	const [buttonStates, setButtonStates] = useState<ButtonStates>({start: true, pause: false, newGame: false})
 	const intervalHandle = useRef<number>()
 	const intervalInMs = useRef(initialIntervalInMs)
 	const context = useRef<CanvasRenderingContext2D>()
@@ -38,10 +39,10 @@ export const Game = (props: Props) => {
 			context.current.fillStyle = "gray"
 			context.current.lineWidth = 0.5
 			context.current.fillRect(
-				baitX.current * cellWidth + 0.5,
-				baitY.current * cellHeight + 0.5,
-				cellWidth - 1.5,
-				cellHeight - 1.5
+				baitX.current * cellWidth + 1,
+				baitY.current * cellHeight + 1,
+				cellWidth - 2.5,
+				cellHeight - 2.5
 			)
 		}
 	}
@@ -51,10 +52,10 @@ export const Game = (props: Props) => {
 			context.current.fillStyle = "#FFFFFF"
 			context.current.lineWidth = 0.5
 			context.current.fillRect(
-				baitX.current * cellWidth + 0.5,
-				baitY.current * cellHeight + 0.5,
-				cellWidth - 1.5,
-				cellHeight - 1.5
+				baitX.current * cellWidth + 1,
+				baitY.current * cellHeight + 1,
+				cellWidth - 2,
+				cellHeight - 2
 			)
 		}
 	}
@@ -89,8 +90,11 @@ export const Game = (props: Props) => {
 				intervalHandle.current = setInterval(nextStep, intervalInMs.current)
 				newCell = new SnakeCell(x, y, context.current, cellWidth, cellHeight)
 				snakeCellArray.current.push(newCell)
-				setGameStats({
-					score: gameStatsRef.current.score + snakeCellArray.current.length,
+				const newScore = Math.round(
+					gameStatsRef.current.score + snakeCellArray.current.length / 2 + gameStatsRef.current.speed / 2
+				)
+				setGameStatistics({
+					score: newScore,
 					length: snakeCellArray.current.length,
 					speed: 1000 / intervalInMs.current
 				})
@@ -104,6 +108,11 @@ export const Game = (props: Props) => {
 			snakeCellArray.current.unshift(newCell)
 			newCell.draw()
 		}
+	}
+
+	const setGameStatistics = function (stats: GameStats) {
+		setGameStats(stats)
+		gameStatsRef.current = stats
 	}
 
 	const stopGame = function () {
@@ -134,11 +143,11 @@ export const Game = (props: Props) => {
 		intervalInMs.current = initialIntervalInMs
 		snakeCellArray.current = []
 		drawGrid()
-		setGameStats({score: 0, length: 1, speed: 1000 / initialIntervalInMs})
+		setGameStatistics({score: 0, length: 1, speed: 1000 / initialIntervalInMs})
 		setButtonStates({start: true, pause: false, newGame: false})
 		dx.current = 1
 		dy.current = 0
-		setGameStats({score: 0, length: 1, speed: 1000 / initialIntervalInMs})
+		setGameStatistics({score: 0, length: 1, speed: 1000 / initialIntervalInMs})
 		clearBait()
 		eraseSnake()
 		const startX = Math.floor(Math.random() * (horizontalCells - 10 - 1)) + 5
@@ -147,7 +156,6 @@ export const Game = (props: Props) => {
 		snakeCellArray.current.push(newCell)
 		newCell.draw()
 		setBait()
-		// updateScore()
 	}
 
 	const eraseSnake = () => {
@@ -184,7 +192,6 @@ export const Game = (props: Props) => {
 	const togglePause = function () {
 		if (gamePaused.current) {
 			nextStep()
-			intervalHandle.current = setInterval(nextStep, intervalInMs.current)
 		} else {
 			deactivateTimer()
 		}
@@ -231,8 +238,7 @@ export const Game = (props: Props) => {
 
 		if (keyCodeArray.indexOf(event.code) !== -1) {
 			event.preventDefault()
-			clearInterval(intervalHandle.current)
-			intervalHandle.current = undefined
+			deactivateTimer()
 			nextStep()
 		}
 	}
