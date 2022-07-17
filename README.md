@@ -17,6 +17,8 @@ Tailwind CSS was added using instructions from [Vite Guide](https://tailwindcss.
 
 Formatting of code by Prettier.
 
+Icon from [FreePNGimg](https://freepngimg.com/).
+
 ## Building
 
     npm i

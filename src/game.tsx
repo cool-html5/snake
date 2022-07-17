@@ -35,7 +35,7 @@ export const Game = (props: Props) => {
 			do {
 				baitX.current = Math.round(Math.random() * (horizontalCells - 1) + 1) - 1
 				baitY.current = Math.round(Math.random() * (verticalCells - 1) + 1) - 1
-			} while (checkSnake(baitX.current, baitY.current))
+			} while (checkBait(baitX.current, baitY.current))
 			context.current.fillStyle = "gray"
 			context.current.lineWidth = 0.5
 			context.current.fillRect(
@@ -45,6 +45,17 @@ export const Game = (props: Props) => {
 				cellHeight - 2.5
 			)
 		}
+	}
+
+	const checkBait = (x: number, y: number) => {
+		const snakeX = snakeCellArray.current[0].getX()
+		const snakeY = snakeCellArray.current[0].getY()
+
+		if ((y === snakeY && Math.abs(snakeX - x) < 2) || (x === snakeX && Math.abs(snakeY - y) < 2)) {
+			return true
+		}
+
+		return checkSnake(x, y)
 	}
 
 	const clearBait = () => {
@@ -61,6 +72,9 @@ export const Game = (props: Props) => {
 	}
 
 	const checkSnake = (cx: number, cy: number) => {
+		if (cx < 0 || cy < 0 || cx >= horizontalCells || cy >= verticalCells) {
+			return true
+		}
 		for (let i = 0; i < snakeCellArray.current.length; i++) {
 			if (snakeCellArray.current[i].getX() == cx && snakeCellArray.current[i].getY() == cy) {
 				return true
@@ -75,50 +89,47 @@ export const Game = (props: Props) => {
 	}
 
 	const nextStep = function () {
-		if (context?.current) {
-			const x = snakeCellArray.current[0].getX() + dx.current
-			const y = snakeCellArray.current[0].getY() + dy.current
-			if (x < 0 || y < 0 || x >= horizontalCells || y >= verticalCells || checkSnake(x, y)) {
-				stopGame()
-				return
-			}
-			let newCell = new SnakeCell(x, y, context.current, cellWidth, cellHeight)
-			if (baitX.current == x && baitY.current == y) {
-				setBait()
-				intervalInMs.current -= 2
-				clearInterval(intervalHandle.current)
-				intervalHandle.current = setInterval(nextStep, intervalInMs.current)
-				newCell = new SnakeCell(x, y, context.current, cellWidth, cellHeight)
-				snakeCellArray.current.push(newCell)
-				const newScore = Math.round(
-					gameStatsRef.current.score + snakeCellArray.current.length / 2 + gameStatsRef.current.speed / 2
-				)
-				setGameStatistics({
-					score: newScore,
-					length: snakeCellArray.current.length,
-					speed: 1000 / intervalInMs.current
-				})
-				snakeCellArray.current.pop()
-			} else {
-				snakeCellArray.current.pop()?.erase()
-				if (!intervalHandle.current) {
-					intervalHandle.current = setInterval(nextStep, intervalInMs.current)
-				}
-			}
-			snakeCellArray.current.unshift(newCell)
-			newCell.draw()
+		if (!context?.current) {
+			return
 		}
+
+		const x = snakeCellArray.current[0].getX() + dx.current
+		const y = snakeCellArray.current[0].getY() + dy.current
+		if (checkSnake(x, y)) {
+			gameOver()
+			return
+		}
+
+		let newCell = new SnakeCell(x, y, context.current, cellWidth, cellHeight)
+		if (baitX.current == x && baitY.current == y) {
+			setBait()
+			intervalInMs.current -= 2
+			clearInterval(intervalHandle.current)
+			intervalHandle.current = setInterval(nextStep, intervalInMs.current)
+			newCell = new SnakeCell(x, y, context.current, cellWidth, cellHeight)
+			snakeCellArray.current.push(newCell)
+			const newScore = Math.round(
+				gameStatsRef.current.score + snakeCellArray.current.length / 2 + gameStatsRef.current.speed / 2
+			)
+			setGameStatistics({
+				score: newScore,
+				length: snakeCellArray.current.length,
+				speed: 1000 / intervalInMs.current
+			})
+			snakeCellArray.current.pop()
+		} else {
+			snakeCellArray.current.pop()?.erase()
+			if (!intervalHandle.current) {
+				intervalHandle.current = setInterval(nextStep, intervalInMs.current)
+			}
+		}
+		snakeCellArray.current.unshift(newCell)
+		newCell.draw()
 	}
 
 	const setGameStatistics = function (stats: GameStats) {
 		setGameStats(stats)
 		gameStatsRef.current = stats
-	}
-
-	const stopGame = function () {
-		setButtonStates({start: false, pause: false, newGame: true})
-		deactivateTimer()
-		gameOver()
 	}
 
 	const deactivateTimer = function () {
@@ -128,6 +139,9 @@ export const Game = (props: Props) => {
 
 	const gameOver = function () {
 		if (context?.current) {
+			setButtonStates({start: false, pause: false, newGame: true})
+			deactivateTimer()
+			gamePaused.current = false
 			context.current.font = "48px Georgia"
 			const gradient = context.current.createLinearGradient(0, 0, canvasWidth, 0)
 			gradient.addColorStop(0, "magenta")
@@ -201,15 +215,28 @@ export const Game = (props: Props) => {
 	}
 
 	const keyDownHandler = function (event: KeyboardEvent) {
-		const keyCodeArray = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]
+		const keyCodeArray = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"]
+
+		if (keyCodeArray.indexOf(event.code) === -1) {
+			return
+		}
+
+		event.preventDefault()
+
+		if (!intervalHandle.current && !gamePaused.current) {
+			return
+		}
+
+		if (event.code === "Space") {
+			togglePause()
+			return
+		}
+
+		if (gamePaused.current) {
+			return
+		}
 
 		switch (event.code) {
-			case "Space":
-				event.preventDefault()
-				if (intervalHandle.current || gamePaused.current) {
-					togglePause()
-				}
-				break
 			case "ArrowUp":
 				if (dy.current === 0) {
 					dx.current = 0
@@ -236,11 +263,8 @@ export const Game = (props: Props) => {
 				break
 		}
 
-		if (keyCodeArray.indexOf(event.code) !== -1) {
-			event.preventDefault()
-			deactivateTimer()
-			nextStep()
-		}
+		deactivateTimer()
+		nextStep()
 	}
 
 	useEventListener("keydown", keyDownHandler as (event: Event) => void)
